@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block titre %}Inscription - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section auth-section">
+  <div class="auth-card">
+    <div class="auth-header">
+      <i data-lucide="user-plus"></i>
+      <h2>Créer un compte</h2>
+      <p>{{ p.nom_ecole if p else 'Collège Don Bosco' }} · {{ p.annee_scolaire if p else '2026-2027' }}</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for categorie, message in messages %}
+          <div class="flash {{ categorie }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('inscription') }}">
+      <div class="form-group">
+        <label><i data-lucide="user"></i> Nom complet</label>
+        <input type="text" name="nom_complet" required placeholder="ex: M. Diop">
+      </div>
+      <div class="form-group">
+        <label><i data-lucide="mail"></i> Email</label>
+        <input type="email" name="email" required placeholder="votre@email.com">
+      </div>
+      <div class="form-group">
+        <label><i data-lucide="lock"></i> Mot de passe</label>
+        <input type="password" name="password" required>
+      </div>
+      <div class="form-group">
+        <label><i data-lucide="user-cog"></i> Rôle</label>
+        <select name="role">
+          <option value="surveillant">Surveillant</option>
+          <option value="surveillant_general">Surveillant Général</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label><i data-lucide="phone-call"></i> Téléphone</label>
+        <input type="text" name="telephone" placeholder="ex: 01 00 00 00 00">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        <i data-lucide="user-plus"></i> Créer le compte
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Déjà un compte ? <a href="{{ url_for('login') }}">Se connecter</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

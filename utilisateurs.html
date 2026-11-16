@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block titre %}Gestion des utilisateurs - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <h2 class="section-title">
+    <i data-lucide="user-cog"></i> Gestion des utilisateurs
+  </h2>
+  <p style="font-size:13px;color:#888;">Seul le Surveillant Général peut gérer les utilisateurs.</p>
+
+  <div class="section" style="margin-top:16px;">
+    <h3 class="section-title" style="font-size:16px;">
+      <i data-lucide="user-plus"></i> Ajouter un utilisateur
+    </h3>
+    <form method="POST" action="{{ url_for('utilisateur_ajouter') }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Nom complet</label>
+          <input type="text" name="nom_complet" required placeholder="ex: M. Diop">
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="mail"></i> Email</label>
+          <input type="email" name="email" required placeholder="ex: diop@gmail.com">
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="lock"></i> Mot de passe</label>
+          <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user-cog"></i> Rôle</label>
+          <select name="role">
+            {% for val, label in ROLES %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="phone-call"></i> Téléphone</label>
+          <input type="text" name="telephone" placeholder="ex: 01 00 00 00 00">
+        </div>
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="save"></i> Créer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Nom complet</th><th>Email</th><th>Rôle</th><th>Téléphone</th><th>Statut</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for user in liste %}
+            <tr>
+              <td><strong>{{ user.nom_complet }}</strong></td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span class="badge {% if user.role=='surveillant_general' %}absence{% else %}retard{% endif %}">
+                  {{ user.role }}
+                </span>
+              </td>
+              <td>{{ user.telephone or '-' }}</td>
+              <td>
+                <span class="badge {% if user.actif %}justifie{% else %}non-justifie{% endif %}">
+                  {{ 'Actif' if user.actif else 'Inactif' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn btn-sm btn-warning" onclick="ouvrirModifier({{ user.id }}, '{{ user.nom_complet }}', '{{ user.email }}', '{{ user.role }}', '{{ user.telephone or '' }}', {{ user.actif }})" title="Modifier">
+                  <i data-lucide="pencil"></i>
+                </button>
+                {% if u.est_surveillant_general() and user.id != u.id %}
+                  <button class="btn btn-sm btn-danger" data-confirmer
+                    data-message="Supprimer l'utilisateur {{ user.email }} ?"
+                    data-url="{{ url_for('utilisateur_supprimer', user_id=user.id) }}" title="Supprimer">
+                    <i data-lucide="trash-2"></i>
+                  </button>
+                {% else %}
+                  <span style="color:#999;font-size:11px;">(verrouillé)</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6" style="text-align:center;color:#888;">Aucun utilisateur.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="modal" id="modal-modifier-user">
+  <div class="modal-contenu">
+    <h3><i data-lucide="pencil"></i> Modifier l'utilisateur</h3>
+    <form method="POST" action="{{ url_for('utilisateur_modifier', user_id=0) }}" id="form-modifier-user">
+      <input type="hidden" name="user_id" id="modif-user-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Nom complet</label>
+          <input type="text" name="nom_complet" id="modif-nom-complet" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="mail"></i> Email</label>
+          <input type="email" name="email" id="modif-email" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="lock"></i> Nouveau mot de passe (laisser vide pour conserver)</label>
+          <input type="password" name="password" id="modif-password">
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user-cog"></i> Rôle</label>
+          <select name="role" id="modif-role">
+            {% for val, label in ROLES %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="phone-call"></i> Téléphone</label>
+          <input type="text" name="telephone" id="modif-telephone">
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" name="actif" id="modif-actif" value="1"> Actif
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="save"></i> Enregistrer
+          </button>
+          <button type="button" class="btn btn-outline" onclick="fermerModal('modal-modifier-user')">Annuler</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+function ouvrirModifier(id, nom, email, role, telephone, actif) {
+  document.getElementById('modif-user-id').value = id;
+  document.getElementById('modif-nom-complet').value = nom;
+  document.getElementById('modif-email').value = email;
+  document.getElementById('modif-role').value = role;
+  document.getElementById('modif-telephone').value = telephone;
+  document.getElementById('modif-actif').checked = actif === true || actif === 1;
+  const form = document.getElementById('form-modifier-user');
+  form.action = "/utilisateurs/" + id + "/modifier";
+  document.getElementById('modal-modifier-user').classList.add('ouvert');
+}
+function fermerModal(id) {
+  document.getElementById(id).classList.remove('ouvert');
+}
+window.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal')) e.target.classList.remove('ouvert');
+});
+</script>
+{% endblock %}
+{% endblock %}

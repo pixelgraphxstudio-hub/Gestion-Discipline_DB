@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block titre %}Journal - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <h2 class="section-title">
+    <i data-lucide="notebook-pen"></i> Journal des retards, absences et renvois
+  </h2>
+
+  <div class="btn-group" style="margin-bottom:14px;flex-wrap:wrap;">
+    <button type="button" class="btn btn-jaune" onclick="document.getElementById('form-ajouter').scrollIntoView({behavior:'smooth'});">
+      <i data-lucide="plus-circle"></i> Ajouter un événement
+    </button>
+    <a href="{{ url_for('journal_exporter_excel') }}" class="btn btn-success">
+      <i data-lucide="file-spreadsheet"></i> Export Excel
+    </a>
+    <a href="{{ url_for('journal_exporter_pdf') }}" class="btn btn-info">
+      <i data-lucide="file-down"></i> Export PDF
+    </a>
+  </div>
+
+  <div id="form-ajouter" class="section" style="margin-top:16px;">
+    <h3 class="section-title" style="font-size:16px;">
+      <i data-lucide="plus"></i> Ajouter Retard / Absence / Renvoi
+    </h3>
+    <form method="POST" action="{{ url_for('journal_ajouter') }}" enctype="multipart/form-data" id="form-journal">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="calendar"></i> Date</label>
+          <input type="date" name="date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="graduation-cap"></i> Classe</label>
+          <select name="classe" id="journal_classe" required>
+            <option value="">-- Choisir --</option>
+            {% for cl in classes %}<option value="{{ cl }}">{{ cl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Élève</label>
+          <input type="text" id="journal_eleve_recherche" placeholder="Rechercher un nom..." list="liste-eleves">
+          <datalist id="liste-eleves"></datalist>
+          <input type="hidden" name="eleve_id" id="journal_eleve_id" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="activity"></i> Type</label>
+          <select name="type" id="journal_type" required>
+            {% for t in types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="clock"></i> Heure / Séance</label>
+          <input type="text" name="heure_seance" placeholder="ex: 07h50">
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="check-circle-2"></i> Justifié</label>
+          <select name="justifie">
+            {% for o in oui_non %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="file-text"></i> Motif</label>
+          <select name="motif" id="journal_motif">
+            <option value="">-- Suggestion --</option>
+            {% for m in motifs %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+            <option value="Autre">Autre (préciser)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="gavel"></i> Décision / Sanction</label>
+          <input type="text" name="decision" placeholder="ex: Avertissement oral">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="bell"></i> Parents informés</label>
+          <select name="parents_informes">
+            {% for o in oui_non %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="image"></i> Photo justificatif</label>
+          <input type="file" name="photo_justificatif" accept="image/*">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="save"></i> Enregistrer
+          </button>
+          <a href="{{ url_for('journal') }}" class="btn btn-outline">Annuler</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div style="margin-top:20px;">
+    <form method="GET" action="{{ url_for('journal') }}" class="filtres">
+      <div class="form-group" style="width:220px;">
+        <label><i data-lucide="search"></i> Recherche (nom élève)</label>
+        <input type="text" name="recherche" value="{{ recherche }}">
+      </div>
+      <div class="form-group" style="width:140px;">
+        <label><i data-lucide="graduation-cap"></i> Classe</label>
+        <select name="classe">
+          <option value="">Toutes</option>
+          {% for cl in classes %}<option value="{{ cl }}" {% if cl==filtre_classe %}selected{% endif %}>{{ cl }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="width:140px;">
+        <label><i data-lucide="activity"></i> Type</label>
+        <select name="type">
+          <option value="">Tous</option>
+          {% for t in types %}<option value="{{ t }}" {% if t==filtre_type %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="width:140px;">
+        <label><i data-lucide="check-circle-2"></i> Justifié</label>
+        <select name="justifie">
+          <option value="">Tous</option>
+          {% for o in oui_non %}<option value="{{ o }}" {% if o==filtre_justifie %}selected{% endif %}>{{ o }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="width:130px;">
+        <label><i data-lucide="calendar"></i> Du</label>
+        <input type="date" name="date_debut" value="{{ filtre_date_debut }}">
+      </div>
+      <div class="form-group" style="width:130px;">
+        <label><i data-lucide="calendar"></i> Au</label>
+        <input type="date" name="date_fin" value="{{ filtre_date_fin }}">
+      </div>
+      <div class="form-group" style="align-self:flex-end;width:auto;">
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="filter"></i> Filtrer
+        </button>
+        <a href="{{ url_for('journal') }}" class="btn btn-outline">Réinitialiser</a>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Classe</th><th>Élève</th><th>Type</th><th>Heure</th>
+            <th>Justifié</th><th>Motif</th><th>Décision</th><th>Parents</th><th>Saisi par</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entrees %}
+            <tr {% if e.eleve and e.eleve.statut=='À CONVOQUER' %}class="convoquer"{% endif %}>
+              <td>{{ e.date.strftime('%d/%m/%Y') if e.date else '-' }}</td>
+              <td>{{ e.classe }}</td>
+              <td><strong>{{ e.eleve.nom_complet if e.eleve else '?' }}</strong></td>
+              <td>
+                <span class="badge {% if e.type=='Retard' %}retard{% elif e.type=='Absence' %}absence{% else %}renvoi{% endif %}">
+                  {{ e.type }}
+                </span>
+              </td>
+              <td>{{ e.heure_seance or '-' }}</td>
+              <td>
+                <span class="badge {% if e.justifie=='Oui' %}justifie{% else %}non-justifie{% endif %}">
+                  {{ e.justifie }}
+                </span>
+              </td>
+              <td>{{ e.motif or '-' }}</td>
+              <td>{{ e.decision or '-' }}</td>
+              <td>{{ e.parents_informes }}</td>
+              <td>{{ e.saisi_par.nom_complet if e.saisi_par else '?' }}</td>
+              <td class="actions">
+                {% if peut_modifier_journal(e) %}
+                  <a href="{{ url_for('journal_modifier', entree_id=e.id) }}" class="btn btn-sm btn-info" title="Modifier">
+                    <i data-lucide="pencil"></i>
+                  </a>
+                  <button class="btn btn-sm btn-danger" data-confirmer
+                    data-message="Supprimer ce {{ e.type }} de {{ e.eleve.nom_complet if e.eleve else '?' }} du {{ e.date.strftime('%d/%m/%Y') if e.date else '' }} ?"
+                    data-url="{{ url_for('journal_supprimer', entree_id=e.id) }}" title="Supprimer">
+                    <i data-lucide="trash-2"></i>
+                  </button>
+                {% else %}
+                  <span style="color:#999;font-size:11px;">(verrouillé)</span>
+                {% endif %}
+                {% if e.photo_justificatif %}
+                  <a href="{{ url_for('static', filename='uploads/justificatifs/' + e.photo_justificatif) }}" target="_blank" class="btn btn-sm btn-info" title="Voir la photo">
+                    <i data-lucide="image"></i>
+                  </a>
+                {% endif %}
+                {% if e.parents_informes == 'Oui' and e.eleve %}
+                  <button class="btn btn-sm btn-success btn-whatsapp"
+                    data-nom="{{ e.eleve.nom_complet }}"
+                    data-date="{{ e.date.strftime('%d/%m/%Y') if e.date else '' }}"
+                    data-heure="{{ e.heure_seance or '' }}"
+                    data-motif="{{ e.motif or '' }}"
+                    title="Envoyer WhatsApp">
+                    <i data-lucide="message-circle"></i>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="11" style="text-align:center;color:#888;">Aucune saisie dans le journal.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination %}
+      <div style="margin-top:10px;text-align:center;color:#888;font-size:13px;">
+        Page {{ pagination.page }} sur {{ pagination.pages }} · {{ pagination.total }} saisie(s)
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{% block scripts %}
+<script>
+const donneesEleves = {{ eleves_json | tojson }};
+const selClasse = document.getElementById('journal_classe');
+const inputRecherche = document.getElementById('journal_eleve_recherche');
+const datalist = document.getElementById('liste-eleves');
+const inputId = document.getElementById('journal_eleve_id');
+
+function remplirListeEleves() {
+  const classe = selClasse.value;
+  const terme = inputRecherche.value.toLowerCase();
+  datalist.innerHTML = '';
+  inputId.value = '';
+  (donneesEleves[classe] || []).forEach(e => {
+    const nom = (e.nom_complet || '').toLowerCase();
+    if (!terme || nom.includes(terme)) {
+      const opt = document.createElement('option');
+      opt.value = e.nom_complet;
+      opt.dataset.id = e.id;
+      datalist.appendChild(opt);
+    }
+  });
+}
+
+selClasse.addEventListener('change', remplirListeEleves);
+inputRecherche.addEventListener('input', remplirListeEleves);
+inputRecherche.addEventListener('change', () => {
+  for (let o of datalist.options) {
+    if (o.value === inputRecherche.value) { inputId.value = o.dataset.id; break; }
+  }
+});
+
+document.getElementById('form-journal').addEventListener('submit', (e) => {
+  if (!inputId.value) {
+    e.preventDefault();
+    alert('Veuillez sélectionner un élève de la liste.');
+  }
+});
+
+document.querySelectorAll('[data-confirmer]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const msg = btn.getAttribute('data-message') || 'Confirmer la suppression ?';
+    const url = btn.getAttribute('data-url');
+    if (confirm(msg)) {
+      const f = document.createElement('form');
+      f.method = 'POST';
+      f.action = url;
+      document.body.appendChild(f);
+      f.submit();
+    }
+  });
+});
+
+document.querySelectorAll('.btn-whatsapp').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const texte = `Bonjour, votre enfant ${btn.dataset.nom || ''} a eu un retard/absence le ${btn.dataset.date || ''} à ${btn.dataset.heure || ''}. Motif : ${btn.dataset.motif || ''}. Merci de signer la fiche. Collège Don Bosco.`;
+    const url = 'https://wa.me/?text=' + encodeURIComponent(texte);
+    window.open(url, '_blank');
+  });
+});
+</script>
+{% endblock %}
+{% endblock %}

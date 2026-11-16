@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titre %}Don Bosco - Gestion Discipline{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="marque">
+      <i data-lucide="school"></i>
+      <span>{{ p.nom_ecole if p else 'Collège Don Bosco' }}</span>
+      <span class="annee">{{ p.annee_scolaire if p else '2026-2027' }}</span>
+    </div>
+
+    <div class="menu">
+      <a href="{{ url_for('dashboard') }}" {% if request.endpoint=='dashboard' %}class="actif"{% endif %}>
+        <i data-lucide="layout-dashboard"></i> Dashboard
+      </a>
+      <a href="{{ url_for('journal') }}" {% if request.endpoint=='journal' %}class="actif"{% endif %}>
+        <i data-lucide="notebook-pen"></i> Journal
+      </a>
+      <a href="{{ url_for('eleves') }}" {% if request.endpoint in ('eleves','eleve_fiche','eleves_import') %}class="actif"{% endif %}>
+        <i data-lucide="users"></i> Élèves
+      </a>
+      <a href="{{ url_for('synthese') }}" {% if request.endpoint=='synthese' %}class="actif"{% endif %}>
+        <i data-lucide="bar-chart-3"></i> Synthèse
+      </a>
+      <a href="{{ url_for('fiche_renvoi') }}" {% if request.endpoint in ('fiche_renvoi','fiche_generer','fiche_voir') %}class="actif"{% endif %}>
+        <i data-lucide="file-text"></i> Fiche de renvoi
+      </a>
+      <a href="{{ url_for('historique') }}" {% if request.endpoint=='historique' %}class="actif"{% endif %}>
+        <i data-lucide="history"></i> Historique
+      </a>
+      {% if u and u.est_surveillant_general() %}
+        <a href="{{ url_for('parametres') }}" {% if request.endpoint=='parametres' %}class="actif"{% endif %}>
+          <i data-lucide="settings"></i> Paramètres
+        </a>
+        <a href="{{ url_for('utilisateurs') }}" {% if request.endpoint in ('utilisateurs','utilisateur_ajouter','utilisateur_modifier','utilisateur_supprimer') %}class="actif"{% endif %}>
+          <i data-lucide="user-cog"></i> Utilisateurs
+        </a>
+      {% endif %}
+      <a href="{{ url_for('backup') }}" class="btn-nav-backup">
+        <i data-lucide="database"></i> Sauvegarder
+      </a>
+    </div>
+
+    <div class="user-info">
+      {% if u %}
+        <div class="connecte">
+          <i data-lucide="user"></i>
+          Connecté : <strong>{{ u.nom_complet }}</strong> (<span class="role">{{ u.role }}</span>)
+        </div>
+        <a href="{{ url_for('logout') }}" class="deconnexion">
+          <i data-lucide="log-out"></i> Déconnexion
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <div class="status-bar">
+    <div class="sync-container">
+      <span class="dot" id="indicateur-synchro" title="Synchronisé"></span>
+      <span id="texte-synchro">Synchronisation...</span>
+    </div>
+    <div id="alerte-hors-ligne" class="alert-hors-ligne" style="display:none;">
+      <i data-lucide="wifi-off"></i> Mode hors-ligne - synchronisation au retour
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container">
+        {% for categorie, message in messages %}
+          <div class="flash {{ categorie }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="container">
+    {% block contenu %}{% endblock %}
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block titre %}Élèves - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <h2 class="section-title">
+    <i data-lucide="users"></i> Élèves (631 - 19 classes)
+  </h2>
+
+  <div class="btn-group" style="margin-bottom:14px;flex-wrap:wrap;">
+    <button type="button" class="btn btn-jaune" onclick="document.getElementById('form-ajouter-eleve').scrollIntoView({behavior:'smooth'});">
+      <i data-lucide="plus-circle"></i> Ajouter un élève
+    </button>
+    <button type="button" class="btn btn-info" onclick="document.getElementById('form-import').scrollIntoView({behavior:'smooth'});">
+      <i data-lucide="file-spreadsheet"></i> Importer Excel
+    </button>
+  </div>
+
+  <div id="form-ajouter-eleve" class="section" style="margin-top:16px;">
+    <h3 class="section-title" style="font-size:16px;">
+      <i data-lucide="user-plus"></i> Ajouter un élève
+    </h3>
+    <form method="POST" action="{{ url_for('eleve_ajouter') }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="graduation-cap"></i> Classe</label>
+          <select name="classe" required>
+            {% for cl in classes %}<option value="{{ cl }}">{{ cl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Prénoms</label>
+          <input type="text" name="prenoms" required placeholder="ex: IBRAHIMA">
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Nom</label>
+          <input type="text" name="nom" required placeholder="ex: BA">
+        </div>
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="save"></i> Ajouter
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div id="form-import" class="section" style="margin-top:16px;">
+    <h3 class="section-title" style="font-size:16px;">
+      <i data-lucide="file-spreadsheet"></i> Importer depuis Excel
+    </h3>
+    <p style="font-size:13px;color:#888;margin:8px 0;">Sélectionnez le fichier Excel des listes de classes. Les doublons sont ignorés.</p>
+    <form method="POST" action="{{ url_for('eleves_import') }}" enctype="multipart/form-data">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="upload"></i> Fichier Excel</label>
+          <input type="file" name="fichier_excel" accept=".xlsx" required>
+        </div>
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="save"></i> Importer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <form method="GET" action="{{ url_for('eleves') }}" class="filtres" style="margin-top:16px;">
+    <div class="form-group" style="width:220px;">
+      <label><i data-lucide="search"></i> Recherche (nom / prénoms)</label>
+      <input type="text" name="recherche" value="{{ recherche }}">
+    </div>
+    <div class="form-group" style="width:160px;">
+      <label><i data-lucide="graduation-cap"></i> Classe</label>
+      <select name="classe">
+        <option value="">Toutes</option>
+        {% for cl in classes_presentes %}<option value="{{ cl }}" {% if cl==filtre_classe %}selected{% endif %}>{{ cl }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="width:160px;">
+      <label><i data-lucide="alert-triangle"></i> Statut</label>
+      <select name="statut">
+        <option value="">Tous</option>
+        <option value="À CONVOQUER" {% if filtre_statut=='À CONVOQUER' %}selected{% endif %}>À CONVOQUER</option>
+        <option value="À SURVEILLER" {% if filtre_statut=='À SURVEILLER' %}selected{% endif %}>À SURVEILLER</option>
+        <option value="OK" {% if filtre_statut=='OK' %}selected{% endif %}>OK</option>
+      </select>
+    </div>
+    <div class="form-group" style="align-self:flex-end;">
+      <button type="submit" class="btn btn-primary">
+        <i data-lucide="filter"></i> Filtrer
+      </button>
+      <a href="{{ url_for('eleves') }}" class="btn btn-outline">Réinitialiser</a>
+    </div>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>N°</th><th>Classe</th><th>Nom complet</th><th>Retards</th><th>Absences</th><th>Abs. non just.</th><th>Renvois</th><th>Statut</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in eleves_donnees %}
+          {% set e = d.eleve %}
+          <tr {% if d.statut=='À CONVOQUER' %}class="convoquer"{% endif %}>
+            <td>{{ e.numero or '-' }}</td>
+            <td>{{ e.classe }}</td>
+            <td><strong>{{ e.nom_complet }}</strong></td>
+            <td>{{ d.retards }}</td>
+            <td>{{ d.absences }}</td>
+            <td>{{ d.absences_nj }}</td>
+            <td>{{ d.renvois }}</td>
+            <td>
+              {% if d.statut == 'À CONVOQUER' %}
+                <span class="badge statut-convoquer">
+                  <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> À CONVOQUER
+                </span>
+              {% elif d.statut == 'À SURVEILLER' %}
+                <span class="badge statut-surveiller">
+                  <i data-lucide="eye" style="width:14px;height:14px;"></i> À SURVEILLER
+                </span>
+              {% else %}
+                <span class="badge statut-ok">
+                  <i data-lucide="check-circle-2" style="width:14px;height:14px;"></i> OK
+                </span>
+              {% endif %}
+            </td>
+            <td class="actions">
+              <a href="{{ url_for('eleve_fiche', eleve_id=e.id) }}" class="btn btn-sm btn-info" title="Fiche élève">
+                <i data-lucide="file-text"></i>
+              </a>
+              {% if u.est_surveillant_general() or u.role=='surveillant' %}
+                <a href="#" class="btn btn-sm btn-warning" onclick="modifierEleve({{ e.id }}, '{{ e.classe }}', '{{ e.prenoms }}', '{{ e.nom }}')" title="Modifier">
+                  <i data-lucide="pencil"></i>
+                </a>
+                <button class="btn btn-sm btn-danger" data-confirmer
+                  data-message="Supprimer l'élève {{ e.nom_complet }} et tout son historique ?"
+                  data-url="{{ url_for('eleve_supprimer', eleve_id=e.id) }}" title="Supprimer">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10" style="text-align:center;color:#888;">Aucun élève.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pagination %}
+    <div style="margin-top:10px;text-align:center;color:#888;font-size:13px;">
+      Page {{ pagination.page }} sur {{ pagination.pages }} · {{ pagination.total }} élève(s)
+    </div>
+  {% endif %}
+</section>
+
+<div class="modal" id="modal-modifier-eleve">
+  <div class="modal-contenu">
+    <h3><i data-lucide="pencil"></i> Modifier l'élève</h3>
+    <form method="POST" action="{{ url_for('eleve_modifier', eleve_id=0) }}" id="form-modifier-eleve">
+      <input type="hidden" name="eleve_id" id="modif-eleve-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="graduation-cap"></i> Classe</label>
+          <select name="classe" id="modif-classe" required>
+            {% for cl in classes %}<option value="{{ cl }}">{{ cl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Prénoms</label>
+          <input type="text" name="prenoms" id="modif-prenoms" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Nom</label>
+          <input type="text" name="nom" id="modif-nom" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="save"></i> Enregistrer
+          </button>
+          <button type="button" class="btn btn-outline" onclick="fermerModal('modal-modifier-eleve')">Annuler</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+function modifierEleve(id, classe, prenoms, nom) {
+  document.getElementById('modif-eleve-id').value = id;
+  document.getElementById('modif-classe').value = classe;
+  document.getElementById('modif-prenoms').value = prenoms;
+  document.getElementById('modif-nom').value = nom;
+  const form = document.getElementById('form-modifier-eleve');
+  form.action = "/eleves/" + id + "/modifier";
+  document.getElementById('modal-modifier-eleve').classList.add('ouvert');
+}
+function fermerModal(id) {
+  document.getElementById(id).classList.remove('ouvert');
+}
+window.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal')) e.target.classList.remove('ouvert');
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block titre %}Fiche de renvoi - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <h2 class="section-title">
+    <i data-lucide="file-text"></i> Fiche de renvoi
+  </h2>
+
+  <div class="section" style="margin-top:16px;">
+    <h3 class="section-title" style="font-size:16px;">
+      <i data-lucide="plus-circle"></i> Générer une fiche de renvoi
+    </h3>
+    <form method="POST" action="{{ url_for('fiche_generer') }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="graduation-cap"></i> Classe</label>
+          <select name="classe" id="fiche_classe" required>
+            <option value="">-- Choisir --</option>
+            {% for cl in classes %}<option value="{{ cl }}">{{ cl }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="user"></i> Élève</label>
+          <input type="text" id="fiche_eleve_recherche" placeholder="Rechercher un nom..." list="liste-eleves-fiche">
+          <datalist id="liste-eleves-fiche"></datalist>
+          <input type="hidden" name="eleve_id" id="fiche_eleve_id" required>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="calendar"></i> Date du renvoi</label>
+          <input type="date" name="date_renvoi" value="{{ now.strftime('%Y-%m-%d') }}" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label><i data-lucide="file-text"></i> Motif du renvoi</label>
+          <textarea name="motif" rows="2" required placeholder="ex: Comportement perturbateur répété"></textarea>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="clock"></i> Durée</label>
+          <select name="duree">
+            <option>1 jour</option><option>2 jours</option><option>3 jours</option>
+            <option>1 semaine</option><option>Exclusion définitive</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i data-lucide="calendar"></i> Retour en classe le</label>
+          <input type="date" name="retour_en_classe_le">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="align-self:flex-end;">
+          <button type="submit" class="btn btn-jaune">
+            <i data-lucide="printer"></i> Générer la fiche
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div style="margin-top:20px;">
+    <form method="GET" action="{{ url_for('fiche_renvoi') }}" class="filtres" style="margin-bottom:12px;">
+      <div class="form-group" style="width:220px;">
+        <label><i data-lucide="search"></i> Recherche (nom élève)</label>
+        <input type="text" name="recherche" value="{{ recherche }}">
+      </div>
+      <div class="form-group" style="align-self:flex-end;">
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="filter"></i> Filtrer
+        </button>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Classe</th><th>Élève</th><th>Motif</th><th>Durée</th><th>Retour le</th><th>Créé par</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for f in fiches %}
+            <tr>
+              <td>{{ f.date_renvoi.strftime('%d/%m/%Y') if f.date_renvoi else '-' }}</td>
+              <td>{{ f.eleve.classe if f.eleve else '?' }}</td>
+              <td><strong>{{ f.eleve.nom_complet if f.eleve else '?' }}</strong></td>
+              <td>{{ f.motif }}</td>
+              <td>{{ f.duree }}</td>
+              <td>{{ f.retour_en_classe_le.strftime('%d/%m/%Y') if f.retour_en_classe_le else '-' }}</td>
+              <td>{{ f.cree_par.nom_complet if f.cree_par else '?' }}</td>
+              <td class="actions">
+                <a href="{{ url_for('fiche_voir', fiche_id=f.id) }}" class="btn btn-sm btn-info" title="Voir / Imprimer">
+                  <i data-lucide="file-text"></i>
+                </a>
+                <a href="{{ url_for('fiche_pdf', fiche_id=f.id) }}" class="btn btn-sm btn-success" title="PDF">
+                  <i data-lucide="file-down"></i>
+                </a>
+                <button class="btn btn-sm btn-danger" data-confirmer
+                  data-message="Supprimer cette fiche de renvoi ?"
+                  data-url="{{ url_for('fiche_supprimer', fiche_id=f.id) }}" title="Supprimer">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="8" style="text-align:center;color:#888;">Aucune fiche de renvoi générée.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+{% block scripts %}
+<script>
+const donneesEleves = {{ eleves_json | tojson }};
+const selClasse = document.getElementById('fiche_classe');
+const inputRecherche = document.getElementById('fiche_eleve_recherche');
+const datalist = document.getElementById('liste-eleves-fiche');
+const inputId = document.getElementById('fiche_eleve_id');
+
+function remplir() {
+  const classe = selClasse.value;
+  const terme = inputRecherche.value.toLowerCase();
+  datalist.innerHTML = '';
+  inputId.value = '';
+  (donneesEleves[classe] || []).forEach(e => {
+    const nom = (e.nom_complet || '').toLowerCase();
+    if (!terme || nom.includes(terme)) {
+      const opt = document.createElement('option');
+      opt.value = e.nom_complet;
+      opt.dataset.id = e.id;
+      datalist.appendChild(opt);
+    }
+  });
+}
+selClasse.addEventListener('change', remplir);
+inputRecherche.addEventListener('input', remplir);
+inputRecherche.addEventListener('change', () => {
+  for (let o of datalist.options) {
+    if (o.value === inputRecherche.value) { inputId.value = o.dataset.id; break; }
+  }
+});
+document.querySelector('form[action*="fiche_generer"]').addEventListener('submit', (e) => {
+  if (!inputId.value) { e.preventDefault(); alert('Veuillez sélectionner un élève.'); }
+});
+</script>
+{% endblock %}
+{% endblock %}

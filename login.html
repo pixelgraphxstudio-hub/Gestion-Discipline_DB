@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block titre %}Connexion - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section auth-section">
+  <div class="auth-card">
+    <div class="auth-header">
+      <i data-lucide="lock"></i>
+      <h2>Connexion</h2>
+      <p>{{ p.nom_ecole if p else 'Collège Don Bosco' }} · {{ p.annee_scolaire if p else '2026-2027' }}</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for categorie, message in messages %}
+          <div class="flash {{ categorie }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label><i data-lucide="mail"></i> Email</label>
+        <input type="email" name="email" required placeholder="votre@email.com">
+      </div>
+      <div class="form-group">
+        <label><i data-lucide="lock"></i> Mot de passe</label>
+        <input type="password" name="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        <i data-lucide="log-in"></i> Se connecter
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Pas de compte ? <a href="{{ url_for('inscription') }}">Créer un compte</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

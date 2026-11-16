@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block titre %}Fiche de renvoi - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section" style="max-width:700px;margin:0 auto;">
+  <h2 class="section-title" style="text-align:center;">
+    <i data-lucide="file-text"></i> Fiche de renvoi
+  </h2>
+
+  <div style="border:2px solid #0B2C4A;padding:22px;border-radius:10px;background:#fff;color:#333;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:20px;font-weight:bold;color:#0B2C4A;">{{ p.nom_ecole if p else 'Collège Don Bosco' }}</div>
+      <div style="font-size:13px;color:#666;">FICHE DE RENVOI · Année scolaire {{ p.annee_scolaire if p else '2026-2027' }}</div>
+    </div>
+
+    <table style="width:100%;font-size:14px;margin-bottom:18px;">
+      <tr><td style="font-weight:bold;width:35%;">Classe :</td><td>{{ eleve.classe }}</td></tr>
+      <tr><td style="font-weight:bold;">Élève :</td><td><strong>{{ eleve.nom_complet }}</strong></td></tr>
+      <tr><td style="font-weight:bold;">Date du renvoi :</td><td>{{ fiche.date_renvoi.strftime('%d/%m/%Y') if fiche.date_renvoi else '-' }}</td></tr>
+      <tr><td style="font-weight:bold;">Motif :</td><td>{{ fiche.motif }}</td></tr>
+      <tr><td style="font-weight:bold;">Durée :</td><td>{{ fiche.duree }}</td></tr>
+      <tr><td style="font-weight:bold;">Retour en classe le :</td><td>{{ fiche.retour_en_classe_le.strftime('%d/%m/%Y') if fiche.retour_en_classe_le else 'À définir' }}</td></tr>
+    </table>
+
+    <div style="border:1px solid #ddd;padding:14px;border-radius:8px;background:#f5f7fa;margin-bottom:18px;">
+      <div style="font-weight:bold;color:#0B2C4A;margin-bottom:8px;">Cumul disciplinaire (depuis le Journal) :</div>
+      <table style="width:100%;font-size:13px;">
+        <tr><td>Retards cumulés :</td><td style="text-align:right;"><strong>{{ retards }}</strong></td></tr>
+        <tr><td>Absences cumulées :</td><td style="text-align:right;"><strong>{{ absences }}</strong></td></tr>
+        <tr><td>Absences non justifiées :</td><td style="text-align:right;"><strong>{{ absences_nj }}</strong></td></tr>
+        <tr><td>Renvois cumulés (y compris celui-ci) :</td><td style="text-align:right;"><strong>{{ renvois + 1 }}</strong></td></tr>
+      </table>
+    </div>
+
+    <div style="margin-top:30px;">
+      <div style="font-weight:bold;color:#0B2C4A;margin-bottom:10px;">Signatures :</div>
+      <table style="width:100%;font-size:13px;">
+        <tr>
+          <td style="width:33%;padding-top:34px;border-top:1px solid #333;">Surveillant : ____________________<br><span style="font-size:11px;color:#666;">Date : ____________</span></td>
+          <td style="width:33%;padding-top:34px;border-top:1px solid #333;">Parent : ____________________<br><span style="font-size:11px;color:#666;">Date : ____________</span></td>
+          <td style="width:34%;padding-top:34px;border-top:1px solid #333;">Surveillant Général : ____________________<br><span style="font-size:11px;color:#666;">Date : ____________</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="margin-top:24px;text-align:center;">
+      <button onclick="window.print()" class="btn btn-jaune">
+        <i data-lucide="printer"></i> Imprimer cette fiche
+      </button>
+      <a href="{{ url_for('fiche_pdf', fiche_id=fiche.id) }}" class="btn btn-success">
+        <i data-lucide="file-down"></i> Télécharger PDF
+      </a>
+      <a href="{{ url_for('fiche_renvoi') }}" class="btn btn-outline">
+        <i data-lucide="arrow-left"></i> Retour
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

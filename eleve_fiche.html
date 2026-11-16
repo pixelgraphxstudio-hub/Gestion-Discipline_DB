@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block titre %}Fiche {{ eleve.nom_complet }} - {{ p.nom_ecole if p else 'Collège Don Bosco' }}{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div>
+      <h2 class="section-title" style="margin-bottom:4px;">
+        <i data-lucide="file-text"></i> Fiche élève : {{ eleve.nom_complet }}
+      </h2>
+      <div style="color:#888;font-size:13px;">
+        <i data-lucide="graduation-cap"></i> Classe : <strong>{{ eleve.classe }}</strong> ·
+        <i data-lucide="user"></i> N° : {{ eleve.numero or '-' }}
+      </div>
+    </div>
+    <div class="btn-group" style="gap:8px;">
+      <a href="{{ url_for('eleves') }}" class="btn btn-outline">
+        <i data-lucide="arrow-left"></i> Retour à la liste
+      </a>
+      {% if eleve.statut == 'À CONVOQUER' %}
+        <span class="badge statut-convoquer" style="font-size:13px;">
+          <i data-lucide="alert-triangle"></i> À CONVOQUER
+        </span>
+      {% elif eleve.statut == 'À SURVEILLER' %}
+        <span class="badge statut-surveiller" style="font-size:13px;">
+          <i data-lucide="eye"></i> À SURVEILLER
+        </span>
+      {% else %}
+        <span class="badge statut-ok" style="font-size:13px;">
+          <i data-lucide="check-circle-2"></i> OK
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="cartes" style="margin-bottom:16px;">
+      <div class="carte jaune">
+        <div class="carte-icone"><i data-lucide="clock"></i></div>
+        <div class="carte-nombre">{{ retards }}</div>
+        <div class="carte-libelle">Retards</div>
+      </div>
+      <div class="carte bleu">
+        <div class="carte-icone"><i data-lucide="user-x"></i></div>
+        <div class="carte-nombre">{{ absences }}</div>
+        <div class="carte-libelle">Absences</div>
+      </div>
+      <div class="carte">
+        <div class="carte-icone"><i data-lucide="user-x"></i></div>
+        <div class="carte-nombre">{{ absences_nj }}</div>
+        <div class="carte-libelle">Absences non justifiées</div>
+      </div>
+      <div class="carte rouge">
+        <div class="carte-icone"><i data-lucide="ban"></i></div>
+        <div class="carte-nombre">{{ renvois }}</div>
+        <div class="carte-libelle">Renvois</div>
+      </div>
+    </div>
+
+    <h3 style="color:#e8eef7;font-size:16px;margin-bottom:10px;">
+      <i data-lucide="clock"></i> Historique journal de {{ eleve.prenoms }} {{ eleve.nom }}
+    </h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Type</th><th>Heure</th><th>Justifié</th><th>Motif</th><th>Décision</th><th>Parents informés</th><th>Saisi par</th></tr>
+        </thead>
+        <tbody>
+          {% for j in entrees %}
+            <tr>
+              <td>{{ j.date.strftime('%d/%m/%Y') if j.date else '-' }}</td>
+              <td>
+                <span class="badge {% if j.type=='Retard' %}retard{% elif j.type=='Absence' %}absence{% else %}renvoi{% endif %}">
+                  {{ j.type }}
+                </span>
+              </td>
+              <td>{{ j.heure_seance or '-' }}</td>
+              <td>
+                <span class="badge {% if j.justifie=='Oui' %}justifie{% else %}non-justifie{% endif %}">
+                  {{ j.justifie }}
+                </span>
+              </td>
+              <td>{{ j.motif or '-' }}</td>
+              <td>{{ j.decision or '-' }}</td>
+              <td>{{ j.parents_informes }}</td>
+              <td>{{ j.saisi_par.nom_complet if j.saisi_par else '?' }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="8" style="text-align:center;color:#888;">Aucun événement.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="color:#e8eef7;font-size:16px;margin-top:24px;margin-bottom:10px;">
+      <i data-lucide="file-text"></i> Fiches de renvoi
+    </h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Motif</th><th>Durée</th><th>Retour le</th><th>Créé par</th></tr>
+        </thead>
+        <tbody>
+          {% for f in fiches %}
+            <tr>
+              <td>{{ f.date_renvoi.strftime('%d/%m/%Y') if f.date_renvoi else '-' }}</td>
+              <td>{{ f.motif }}</td>
+              <td>{{ f.duree }}</td>
+              <td>{{ f.retour_en_classe_le.strftime('%d/%m/%Y') if f.retour_en_classe_le else '-' }}</td>
+              <td>{{ f.cree_par.nom_complet if f.cree_par else '?' }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" style="text-align:center;color:#888;">Aucune fiche de renvoi.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}
